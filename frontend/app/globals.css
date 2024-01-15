@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.display-mode-transition {
+    transition: background-color 1s ease-in-out, color 1s ease-in-out;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0 auto;
+    font-family: 'Noto Sans', sans-serif;
+}
+
+h1 {
+    font-size: 3rem;
+    font-weight: 700;
+}
+
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+    cursor: pointer;
+}
+
+@font-face {
+    font-family: 'Noto Sans';
+    src: url('../public/typography/NotoSans.ttf') format('truetype'),
+        url('../public/typography/NotoSans-Italic.ttf') format('truetype');
+}
