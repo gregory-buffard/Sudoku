@@ -1,2 +1,4 @@
-backend/venv/
+venv/
 *.log
+__pycache__/
+.idea/
