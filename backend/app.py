@@ -1,12 +1,39 @@
-from flask import Flask, request, jsonify, flash, redirect, url_for
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from solver import solve_sudoku
-from image_processing import process_and_extract_sudoku
+import cv2
+import numpy as np
+from torchvision import transforms
+from io import BytesIO
+from PIL import Image
 import os
+from ml import Net
+import torch
 
 app = Flask(__name__)
 CORS(app)
+model_path = "sudoku_vision_cnn.pth"
+model = Net()
+model.load_state_dict(torch.load(model_path))
+model.eval()
+
+transform = transforms.Compose([
+    transforms.Resize((640, 480)),
+    transforms.ToTensor()
+])
+
+def process_image(image):
+    image = Image.open(BytesIO(image)).convert('L')
+    image = transform(image)
+    image = image.unsqueeze(0)
+    return image
+
+def predict(image):
+    with torch.no_grad():
+        output = model(image)
+        output = output.squeeze(0).argmax(dim=1).view(9, 9)
+    return output.numpy()
 
 @app.route('/solve-image', methods=['POST'])
 def solve_from_image():
@@ -15,17 +42,13 @@ def solve_from_image():
     file = request.files['image']
     if file.filename == '':
         return jsonify({"error": "Aucun fichier selectioné."}), 400
-    filename = secure_filename(file.filename)
-    file_path = os.path.join('./images', filename)
-    file.save(file_path)
-    try:
-        sudoku_board = process_and_extract_sudoku(file_path)
-        if solve_sudoku(sudoku_board):
-            return jsonify({"solution": sudoku_board})
-        else:
-            return jsonify({"solution": sudoku_board})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    image = process_image(file.read())
+    grid = predict(image)
+
+    if solve_sudoku(grid):
+        return jsonify({"solution": grid.tolist()}), 200
+    else:
+        return jsonify({"solution": grid.tolist()}), 200
 
 @app.route('/solve', methods=['POST'])
 def solve():

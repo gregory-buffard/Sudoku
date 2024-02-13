@@ -65,7 +65,9 @@ const Home = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
-        setGrid(res.data.solution);
+      console.log('=================================================================')
+      console.log('HERE', res.data.solution)
+      setGrid(res.data.solution);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const error = err.response?.data.error || 'Une erreur est survenue';
