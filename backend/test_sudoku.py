@@ -37,7 +37,7 @@ def solve_puzzle(model, puzzle_tensor):
 
 if __name__ == "__main__":
     # Example unsolved Sudoku puzzle (replace this with any puzzle you want to test)
-    unsolved_puzzle = "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+    unsolved_puzzle = "000000000000900006000008030060000004002000301000740962080005000097023080056004017"
 
     model_path = 'sudoku.pth'
     model = load_model(model_path)

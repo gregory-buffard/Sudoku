@@ -13,7 +13,7 @@ import numpy as np
 class SudokuDataset(Dataset):
     def __init__(self, csv_file):
         print('Loading dataset...')
-        skip = range(1, 1100001)
+        skip = range(1, 1500001) # Value not updated for next run
         self.data_frame = pd.read_csv(csv_file, skiprows=skip, nrows=100000, dtype=str)
         self.data_frame['puzzle'] = [list(map(int, list(row))) for row in tqdm(self.data_frame['puzzle'], desc="Loading puzzles")]
         self.data_frame['solution'] = [list(map(int, list(row))) for row in tqdm(self.data_frame['solution'], desc="Loading solutions")]

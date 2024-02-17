@@ -6,3 +6,5 @@ binaries/
 output/
 images/
 .DS_Store
+backend/sudoku.pth
+backend/data/
