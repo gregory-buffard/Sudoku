@@ -56,12 +56,6 @@ export const AppProvider: FunctionComponent<{ children: ReactNode }> = ({
     placeholder: AppVar["placeholder"] =
       "placeholder-stone-400 dark:placeholder-stone-600";
 
-  /*
-   * TODO:
-   *  - Finish Function for opening settings from terminal mode
-   *  - Fulfill available terminal functions
-   * */
-
   const state: AppState = {
     grid,
     lightSwitch,

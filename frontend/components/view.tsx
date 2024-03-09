@@ -1,5 +1,4 @@
 import { useAppContext, AppContextType } from "@/app/Context";
-import axios from "axios";
 import { useEffect, useRef, useState, KeyboardEvent, ChangeEvent } from "react";
 
 const UI = () => {
@@ -15,49 +14,77 @@ const UI = () => {
     setSettings,
   }: AppContextType = useAppContext();
 
-  const generateSubgrids = (grid: AppContextType["grid"]) => {
-    const subgrids = [];
-    for (let row = 0; row < 3; row++) {
-      for (let col = 0; col < 3; col++) {
-        const subgrid = [];
-        for (let i = 0; i < 3; i++) {
-          for (let j = 0; j < 3; j++) {
-            subgrid.push(grid[row * 3 + i][col * 3 + j]);
-          }
-        }
-        subgrids.push(subgrid);
-      }
-    }
-    return subgrids;
+  const generateSubgrids = (
+    grid: Array<Array<number>>,
+  ): Array<Array<number>> => {
+    return Array.from({ length: 9 }, (_, k) => {
+      const row = Math.floor(k / 3) * 3;
+      const col = (k % 3) * 3;
+      return grid.slice(row, row + 3).flatMap((r) => r.slice(col, col + 3));
+    });
   };
   const subgrids = generateSubgrids(grid);
 
-  const inputChange = (row: number, col: number, value: string): void => {
-    if (value === "" || /^[1-9]$/.test(value)) {
-      const newGrid = [...grid];
-      newGrid[row][col] = value ? parseInt(value) : 0;
-      setGrid(newGrid);
-    }
+  const inputChange = (
+    rowIndex: number,
+    colIndex: number,
+    value: string,
+  ): void => {
+    const newGrid = JSON.parse(JSON.stringify(grid));
+    newGrid[rowIndex][colIndex] = value ? parseInt(value) : 0;
+    setGrid(newGrid);
   };
 
-  const solve = async (): Promise<void> => {
-    setSolving(true);
-    try {
-      const res = await axios.post("http://localhost:5000/solve", {
-        board: grid,
-      });
-      console.log("HERE", res);
-      setGrid(res.data.solution);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        const error = err.response?.data.error || "Une erreur est survenue";
+  useEffect(() => {
+    // @ts-ignore
+    const cleanupSolved = window.electronAPI.addListener(
+      "solved",
+      (e: ChangeEvent, solvedPuzzle: Array<Array<number>>): void => {
+        setGrid(solvedPuzzle);
+        setSolving(false);
+      },
+    );
+
+    // @ts-ignore
+    const cleanupError = window.electronAPI.addListener(
+      "error",
+      (e: ChangeEvent, error: string): void => {
         alert(error);
-      } else {
-        alert("Une erreur est survenue");
-      }
-    } finally {
-      setSolving(false);
-    }
+        setSolving(false);
+      },
+    );
+
+    return (): void => {
+      cleanupSolved();
+      cleanupError();
+    };
+  }, []);
+
+  const solve = (): void => {
+    if (solving) return;
+    const format = (grid: Array<Array<number>>): Array<Array<number>> => {
+      const input = grid
+        .map((row: Array<number>) =>
+          row
+            .map((cell: any) =>
+              cell === null || cell === "" || cell === undefined
+                ? "0"
+                : cell.toString(),
+            )
+            .join(""),
+        )
+        .join("");
+      return Array.from({ length: 9 }, (e: ChangeEvent, i: number) =>
+        Array.from({ length: 9 }, (e: ChangeEvent, j: number) =>
+          parseInt(input[9 * i + j], 10),
+        ),
+      );
+    };
+
+    setSolving(true);
+    const puzzle = format(grid);
+    // @ts-ignore
+    window.electronAPI.sendSudoku(puzzle);
   };
 
   return (
@@ -82,7 +109,7 @@ const UI = () => {
                   min="1"
                   max="9"
                   value={cell || ""}
-                  onChange={(e) =>
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     inputChange(
                       Math.floor(index / 3) * 3 + Math.floor(cellIndex / 3),
                       (index % 3) * 3 + (cellIndex % 3),
@@ -194,7 +221,38 @@ const Terminal = () => {
     }
   }, [input]);
 
-  const handleKeyDown = async (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  useEffect(() => {
+    // @ts-ignore
+    const cleanupSolved = window.electronAPI.addListener(
+      "solved",
+      (e: ChangeEvent, solvedPuzzle: Array<Array<number>>) => {
+        setGrid(solvedPuzzle);
+        setHistory((prev) => [
+          ...prev,
+          `Sudokiste > ${solvedPuzzle.flat().join("")}`,
+        ]);
+        setSolving(false);
+        setInput("");
+      },
+    );
+
+    // @ts-ignore
+    const cleanupError = window.electronAPI.addListener(
+      "error",
+      (e: ChangeEvent, error: string) => {
+        setHistory((prev) => [...prev, `Sudokiste > ${error}`]);
+        setSolving(false);
+        setInput("");
+      },
+    );
+
+    return () => {
+      cleanupSolved();
+      cleanupError();
+    };
+  }, []);
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === "Enter") {
       e.preventDefault();
       if (e.shiftKey) {
@@ -228,6 +286,7 @@ const Terminal = () => {
           setHistory((prev) => [
             ...prev,
             "Sudokiste > Pour resoudre un Sudoku, tapez le puzzle sous forme de 81 chiffres (0 pour les cases vides).",
+            "TIP: Lorsque la solution est trouvee, elle sera affichee ici, ainsi que dans le mode graphique!",
           ]);
           setInput("");
           return;
@@ -247,35 +306,17 @@ const Terminal = () => {
             setInput("");
             return;
           }
-
           setSolving(true);
-          try {
-            const res = await axios.post("http://localhost:5000/solve", {
-              board: input
-                .match(/.{1,9}/g)
-                ?.map((row) => row.split("").map(Number)),
-            });
-
-            setGrid(res.data.solution);
-
-            const solutionString = res.data.solution.flat().join("");
-            setHistory((prev) => [
-              ...prev,
-              `Sudokiste > Solution: ${solutionString}`,
-            ]);
-          } catch (error: any) {
-            const errorMessage =
-              error.response?.data.error || "Une erreur est survenue";
-            setHistory((prev) => [...prev, `Sudokiste > ${errorMessage}`]);
-          } finally {
-            setSolving(false);
-            setInput("");
-          }
+          const puzzle = Array.from({ length: 9 }, (_, i) =>
+            Array.from({ length: 9 }, (_, j) => parseInt(input[9 * i + j], 10)),
+          );
+          // @ts-ignore
+          window.electronAPI.sendSudoku(puzzle);
       }
     }
   };
 
-  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
     if (e.target.value.length <= 81) {
       setInput(e.target.value);
     }
@@ -310,10 +351,6 @@ const Terminal = () => {
       </div>
     </section>
   );
-};
-
-const Settings = () => {
-  return <div></div>;
 };
 
 const View = () => {

@@ -1,15 +1,32 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "sudokiste",
+  "version": "1.0.0",
   "private": true,
+  "main": "main/main.js",
+  "author": "Grégory Stehlík Buffard",
+  "description": "Sudokiste",
   "scripts": {
-    "dev": "next dev --turbo --experimental-https",
-    "build": "next build",
+    "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"next dev\" \"electron .\"",
+    "build": "next build && electron-builder",
     "start": "next start",
     "lint": "next lint"
   },
+  "extraResources": [
+    {
+      "from": "./main/services",
+      "to": "services",
+      "filter": [
+        "**/*"
+      ]
+    }
+  ],
+  "build": {
+    "asarUnpack": [
+      "./main/services"
+    ]
+  },
   "dependencies": {
-    "axios": "^1.6.5",
+    "electron-serve": "^1.3.0",
     "next": "14.0.5-canary.57",
     "react": "^18",
     "react-dom": "^18"
@@ -19,6 +36,9 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
+    "concurrently": "^8.2.2",
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.3",
     "eslint": "^8",
     "eslint-config-next": "14.0.5-canary.57",
     "postcss": "^8",

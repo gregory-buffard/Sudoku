@@ -62,7 +62,7 @@ const TileSetting = ({ CardPkg }: { CardPkg: CardPkg }) => {
 
     return (
       <div
-        className={`${secondaryColor} ${textColor} display-mode-transition w-1/5 p-[2vh] rounded-[2vh] flex justify-center items-center absolute`}
+        className={`${secondaryColor} ${textColor} display-mode-transition w-[36vh] p-[2vh] rounded-[2vh] flex justify-center items-center absolute`}
       >
         <div
           className={`w-full gap-[1vh] flex flex-col justify-start items-center`}
@@ -125,7 +125,7 @@ const Settings = ({ Theme }: { Theme: Theme }) => {
         className={`w-full h-full absolute z-20 ${primaryColor} display-mode-transition bg-opacity-75 dark:bg-opacity-75 backdrop-blur-md flex justify-center items-center`}
       >
         <div
-          className={`${secondaryColor} display-mode-transition w-1/5 p-[1vh] gap-[1vh] rounded-[2vh] flex flex-col justify-start items-center overflow-hidden`}
+          className={`${secondaryColor} display-mode-transition w-[36vh] p-[1vh] gap-[1vh] rounded-[2vh] flex flex-col justify-start items-center overflow-hidden`}
         >
           <SwitchSetting
             SwitchablePkg={{
@@ -191,35 +191,51 @@ const Settings = ({ Theme }: { Theme: Theme }) => {
                     }
                   >
                     <Link
-                      href={"https://github.com/gregory-buffard/Sudoku"}
-                      target={"_blank"}
-                      className={`${textColor} display-mode-transition credits`}
+                      href={"#"}
+                      className={"credits"}
+                      onClick={() =>
+                        // @ts-ignore
+                        window.electronAPI.openExternal(
+                          "https://github.com/gregory-buffard/Sudoku",
+                        )
+                      }
                     >
                       &copy; {new Date().getFullYear()} Sudokiste &mdash;
                       Grégory Stehlík Buffard
                     </Link>
                     <Link
-                      href={"https://www.refactoringui.com"}
-                      target={"_blank"}
+                      href={"#"}
                       className={"credits"}
+                      onClick={() =>
+                        // @ts-ignore
+                        window.electronAPI.openExternal(
+                          "https://www.refactoringui.com",
+                        )
+                      }
                     >
                       Refactoring UI &mdash; Adam Wathan & Steve Schoger
                     </Link>
                     <Link
-                      href={
-                        "https://developer.apple.com/design/human-interface-guidelines/"
-                      }
-                      target={"_blank"}
+                      href={"#"}
                       className={"credits"}
+                      onClick={() =>
+                        // @ts-ignore
+                        window.electronAPI.openExternal(
+                          "https://developer.apple.com/design/human-interface-guidelines/",
+                        )
+                      }
                     >
                       Human Interface Guidelines &mdash; Apple Developer
                     </Link>
                     <Link
-                      href={
-                        "https://www.microsoft.com/en-us/research/uploads/prod/2006/01/Bishop-Pattern-Recognition-and-Machine-Learning-2006.pdf"
-                      }
-                      target={"_blank"}
+                      href={"#"}
                       className={"credits"}
+                      onClick={() =>
+                        // @ts-ignore
+                        window.electronAPI.openExternal(
+                          "https://www.microsoft.com/en-us/research/uploads/prod/2006/01/Bishop-Pattern-Recognition-and-Machine-Learning-2006.pdf",
+                        )
+                      }
                     >
                       Patterns Recognition & Machine Learning &mdash;
                       Christopher M. Bishop
