@@ -82,6 +82,7 @@ const createWindow = () => {
   if (app.isPackaged) {
     appServe(win).then(() => {
       win.loadURL("app://-");
+      win.setMenuBarVisibility(false);
     });
   } else {
     win.loadURL("http://localhost:3000");

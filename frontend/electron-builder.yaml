@@ -1,12 +1,12 @@
-appId: "frfr"
+appId: "io.github.gregory-buffard.sudoku"
 productName: "Sudokiste"
 copyright: "© 2024 Grégory Stehlík Buffard"
 win:
   target: ["dir", "portable", "zip"]
-  icon: "app/favicon.ico"
+  icon: "./resources/Sudokiste.ico"
 linux:
   target: ["dir", "appimage", "zip"]
   icon: "resources/icon.png"
 mac:
   target: ["dir", "dmg", "zip"]
-  icon: "resources/icon.icns"
+  icon: "./resources/Sudokiste.icns"

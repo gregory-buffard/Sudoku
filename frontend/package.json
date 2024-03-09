@@ -7,7 +7,7 @@
   "description": "Sudokiste",
   "scripts": {
     "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"next dev\" \"electron .\"",
-    "build": "next build && electron-builder",
+    "build": "next build && electron-builder -mwl",
     "start": "next start",
     "lint": "next lint"
   },
@@ -23,7 +23,13 @@
   "build": {
     "asarUnpack": [
       "./main/services"
-    ]
+    ],
+    "mac": {
+      "icon": "resources/Sudokiste.icns"
+    },
+    "win": {
+      "icon": "resources/Sudokiste.ico"
+    }
   },
   "dependencies": {
     "electron-serve": "^1.3.0",
