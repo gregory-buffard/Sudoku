@@ -49,7 +49,7 @@ def solve_sudoku(arr):
 if __name__ == '__main__':
     # Define a Sudoku puzzle (0's represent empty cells)
     puzzle = [
-        [5, 3, 0, 0, 7, 0, 0, 0, 0],
+        [5, 3, 3, 0, 7, 0, 0, 0, 0],
         [6, 0, 0, 1, 9, 5, 0, 0, 0],
         [0, 9, 8, 0, 0, 0, 0, 6, 0],
         [8, 0, 0, 0, 6, 0, 0, 0, 3],

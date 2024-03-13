@@ -1,34 +1,54 @@
 {
   "name": "sudokiste",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "private": true,
   "main": "main/main.js",
   "author": "Grégory Stehlík Buffard",
   "description": "Sudokiste",
   "scripts": {
     "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"next dev\" \"electron .\"",
-    "build": "next build && electron-builder -mwl",
+    "build": "next build && electron-builder --win --x64",
     "start": "next start",
     "lint": "next lint"
   },
-  "extraResources": [
-    {
-      "from": "./main/services",
-      "to": "services",
-      "filter": [
-        "**/*"
-      ]
-    }
-  ],
   "build": {
+    "files": [
+      "out/**/*",
+      "main/**/*",
+      "resources/**/*",
+      "package.json"
+    ],
     "asarUnpack": [
       "./main/services"
     ],
+    "appId": "com.electron.gregory-buffard.sudokiste",
+    "productName": "Sudokiste",
+    "copyright": "© 2024 Grégory Stehlík Buffard",
+    "executableName": "sudokiste",
+    "compression": "maximum",
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": true,
+      "runAfterFinish": false,
+      "installerLanguages": ["fr_FR"],
+      "license": "../LICENSE"
+    },
     "mac": {
       "icon": "resources/Sudokiste.icns"
     },
     "win": {
-      "icon": "resources/Sudokiste.ico"
+      "icon": "resources/Sudokiste.ico",
+      "target": ["nsis"],
+      "artifactName": "Sudokiste Setup ${version}.${ext}",
+      "publisherName": "Grégory Stehlík Buffard"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Game"
     }
   },
   "dependencies": {

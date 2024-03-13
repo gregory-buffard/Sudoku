@@ -34,7 +34,7 @@ def is_safe(arr, row, col, num):
 def solve_sudoku(arr):
     l = [0, 0]
     if not find_empty_location(arr, l):
-        return True  # Success!
+        return True
 
     row, col = l
 
@@ -45,13 +45,13 @@ def solve_sudoku(arr):
             if solve_sudoku(arr):
                 return True
 
-            arr[row][col] = 0  # Backtrack
+            arr[row][col] = 0
 
-    return False  # Triggers backtracking
+    return False
 
 if __name__ == "__main__":
     arr = json.load(sys.stdin)
     if solve_sudoku(arr):
         print(json.dumps(arr))
     else:
-        print("No solution exists")
+        print("unsolvable")

@@ -12,6 +12,7 @@ interface AppState {
   solving: boolean;
   terminal: boolean;
   settings: boolean;
+  tutorial: boolean;
 }
 interface AppActions {
   setGrid: (value: Array<Array<number>>) => void;
@@ -19,6 +20,7 @@ interface AppActions {
   setSolving: (value: boolean) => void;
   setTerminal: (value: boolean) => void;
   setSettings: (value: boolean) => void;
+  setTutorial: (value: boolean) => void;
 }
 interface AppVar {
   primaryColor: string;
@@ -54,7 +56,8 @@ export const AppProvider: FunctionComponent<{ children: ReactNode }> = ({
     secondaryColor: AppVar["secondaryColor"] = "bg-stone-200 dark:bg-stone-800",
     textColor: AppVar["textColor"] = "text-stone-900 dark:text-stone-100",
     placeholder: AppVar["placeholder"] =
-      "placeholder-stone-400 dark:placeholder-stone-600";
+      "placeholder-stone-400 dark:placeholder-stone-600",
+    [tutorial, setTutorial] = useState<AppState["tutorial"]>(false);
 
   const state: AppState = {
     grid,
@@ -62,6 +65,7 @@ export const AppProvider: FunctionComponent<{ children: ReactNode }> = ({
     solving,
     terminal,
     settings,
+    tutorial,
   };
   const actions: AppActions = {
     setGrid,
@@ -69,6 +73,7 @@ export const AppProvider: FunctionComponent<{ children: ReactNode }> = ({
     setSolving,
     setTerminal,
     setSettings,
+    setTutorial,
   };
   const variables: AppVar = {
     primaryColor,

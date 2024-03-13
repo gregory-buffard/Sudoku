@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const serve = require("electron-serve");
 const path = require("path");
-const { spawn } = require("child_process");
+const { spawn, exec } = require("child_process");
 
 const appServe = app.isPackaged
   ? serve({
@@ -11,32 +11,28 @@ const appServe = app.isPackaged
 
 const checkPythonVersion = () => {
   return new Promise((resolve, reject) => {
-    let python = "python3";
-    const pyVersionCheck = spawn(python, ["--version"]);
-
-    pyVersionCheck.on("error", () => {
-      python = "python";
-      const pyVersionCheckFallback = spawn(python, ["--version"]);
-      pyVersionCheckFallback.stdout.on("data", (data) => {
-        if (data.toString().includes("Python 3")) {
-          resolve(python);
-        } else {
-          reject(new Error("Python 3 not found"));
-        }
-      });
-      pyVersionCheckFallback.stderr.on("data", (data) => {
-        reject(new Error("Python 3 not found"));
-      });
-    });
-
-    pyVersionCheck.stdout.on("data", (data) => {
-      if (data.toString().includes("Python 3")) {
-        resolve(python);
+    exec("python3 --version", (error, stdout, stderr) => {
+      if (!error && stdout.includes("Python")) {
+        resolve("python3");
+      } else {
+        exec("python --version", (error, stdout, stderr) => {
+          if (!error && (stdout + stderr).includes("Python")) {
+            resolve("python");
+          } else {
+            exec("py --version", (error, stdout, stderr) => {
+              if (!error && (stdout + stderr).includes("Python")) {
+                resolve("py");
+              } else {
+                reject(
+                  new Error(
+                    "Python wasn't found on this system. Please install via Microsoft Store/python.org and try again.",
+                  ),
+                );
+              }
+            });
+          }
+        });
       }
-    });
-
-    pyVersionCheck.stderr.on("data", (data) => {
-      resolve(python);
     });
   });
 };
@@ -59,6 +55,10 @@ const createWindow = () => {
         pyProcess.stdin.end();
 
         pyProcess.stdout.on("data", (data) => {
+          if (data.toString().includes("unsolvable")) {
+            e.reply("error", "unsolvable");
+            return;
+          }
           e.reply("solved", JSON.parse(data.toString()));
         });
 

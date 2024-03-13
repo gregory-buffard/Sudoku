@@ -1,18 +1,95 @@
 import { useAppContext, AppContextType } from "@/app/Context";
 import { useEffect, useRef, useState, KeyboardEvent, ChangeEvent } from "react";
 
+interface INotification {
+  state: {
+    visible: boolean;
+    setVisible: (visible: boolean) => void;
+  };
+  icon: JSX.Element;
+  label: string;
+  message: string;
+  color: string;
+  action: () => void;
+}
+
+const gridValidation = (grid: Array<Array<number>>): boolean => {
+  const seen = new Set();
+  for (let i = 0; i < 9; i++) {
+    for (let j = 0; j < 9; j++) {
+      const number = grid[i][j];
+      if (number !== 0) {
+        const rowCheck = `row${i}-${number}`;
+        const colCheck = `col${j}-${number}`;
+        const boxCheck = `box${Math.floor(i / 3)}-${Math.floor(j / 3)}-${number}`;
+        if (seen.has(rowCheck) || seen.has(colCheck) || seen.has(boxCheck)) {
+          return false; // Invalid puzzle
+        }
+        seen.add(rowCheck);
+        seen.add(colCheck);
+        seen.add(boxCheck);
+      }
+    }
+  }
+  return true;
+};
+
+const Notification = ({ content }: { content: INotification }) => {
+  useEffect(() => {
+    if (content.state.visible) {
+      setTimeout(() => {
+        content.state.setVisible(false);
+      }, 5000);
+    }
+  }, [content.state.visible]);
+
+  return (
+    <button
+      type={"button"}
+      onClick={() => {
+        content.action();
+        content.state.setVisible(false);
+      }}
+      onWheel={() => content.state.setVisible(false)}
+      className={`${content.state.visible ? "translate-y-[3vh]" : "-translate-y-[150%]"} ${content.color} backdrop-blur-sm border-[0.5vh] [transition:_transform_400ms_ease-in-out,_background-color_200ms_ease-in-out,_scale_200ms_ease-in-out] absolute top-0 z-30 w-[36vh] rounded-[3vh] flex justify-start items-center gap-[1vh] px-[1.5vh] py-[1.5vh] drop-shadow-2xl notification-scale cursor-pointer`}
+    >
+      <div className={"w-[8vh]"}>{content.icon}</div>
+      <div className={"flex flex-col justify-start items-start w-full"}>
+        <div className={"flex justify-between items-center w-full"}>
+          <h2 className={"text-[1.75vh]"}>{content.label}</h2>
+        </div>
+        <p className={"text-left text-[1.5vh]"}>{content.message}</p>
+      </div>
+      <div
+        className={`absolute w-full left-0 right-0 bottom-0 translate-y-[4vh] flex justify-center items-center text-center`}
+      >
+        <p
+          className={`bg-stone-800 dark:bg-stone-200 bg-opacity-50 dark:bg-opacity-50 text-stone-100 dark:text-stone-900 px-[1.5vh] py-[0.5vh] text-[1.5vh] rounded-full`}
+        >
+          Défilez la souris pour masquer
+        </p>
+      </div>
+    </button>
+  );
+};
+
 const UI = () => {
   const {
-    grid,
-    setGrid,
-    solving,
-    setSolving,
-    primaryColor,
-    secondaryColor,
-    textColor,
-    settings,
-    setSettings,
-  }: AppContextType = useAppContext();
+      grid,
+      setGrid,
+      solving,
+      setSolving,
+      primaryColor,
+      secondaryColor,
+      textColor,
+      settings,
+      setSettings,
+      tutorial,
+      setTutorial,
+    }: AppContextType = useAppContext(),
+    [invalid, setInvalid] = useState<boolean>(false),
+    [error, setError] = useState<boolean>(false),
+    [tutorialMessage, setTutorialMessage] = useState<boolean>(false);
 
   const generateSubgrids = (
     grid: Array<Array<number>>,
@@ -25,14 +102,55 @@ const UI = () => {
   };
   const subgrids = generateSubgrids(grid);
 
+  useEffect(() => {
+    console.log("checking tutorial");
+    if (localStorage.getItem("tutorial") === null) {
+      console.log("setting tutorial");
+      localStorage.setItem("tutorial", "true");
+      setTutorial(true);
+    } else {
+      setTutorial(localStorage.getItem("tutorial") === "true");
+    }
+  }, []);
+
   const inputChange = (
     rowIndex: number,
     colIndex: number,
     value: string,
   ): void => {
     const newGrid = JSON.parse(JSON.stringify(grid));
-    newGrid[rowIndex][colIndex] = value ? parseInt(value) : 0;
+    if (value === "") {
+      newGrid[rowIndex][colIndex] = "";
+    } else {
+      newGrid[rowIndex][colIndex] = parseInt(value, 10);
+    }
     setGrid(newGrid);
+  };
+
+  const handleKeyDown = (
+    e: KeyboardEvent<HTMLInputElement>,
+    rowIndex: number,
+    colIndex: number,
+  ): void => {
+    const current: string | number = grid[rowIndex][colIndex];
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const newValue = current === 0 || current === undefined ? 9 : current - 1;
+      inputChange(rowIndex, colIndex, newValue.toString());
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const newValue =
+        current === 9 ? 0 : current === undefined ? 1 : current + 1;
+      inputChange(rowIndex, colIndex, newValue.toString());
+    }
+  };
+
+  const blur = (rowIndex: number, colIndex: number): void => {
+    const newGrid = JSON.parse(JSON.stringify(grid));
+    if (newGrid[rowIndex][colIndex] === 0) {
+      newGrid[rowIndex][colIndex] = "";
+      setGrid(newGrid);
+    }
   };
 
   useEffect(() => {
@@ -49,7 +167,7 @@ const UI = () => {
     const cleanupError = window.electronAPI.addListener(
       "error",
       (e: ChangeEvent, error: string): void => {
-        alert(error);
+        setError(true);
         setSolving(false);
       },
     );
@@ -62,6 +180,7 @@ const UI = () => {
 
   const solve = (): void => {
     if (solving) return;
+    setSolving(true);
     const format = (grid: Array<Array<number>>): Array<Array<number>> => {
       const input = grid
         .map((row: Array<number>) =>
@@ -81,16 +200,105 @@ const UI = () => {
       );
     };
 
-    setSolving(true);
     const puzzle = format(grid);
-    // @ts-ignore
-    window.electronAPI.sendSudoku(puzzle);
+    if (!gridValidation(puzzle)) {
+      setInvalid(true);
+      setSolving(false);
+    } else {
+      // @ts-ignore
+      window.electronAPI.sendSudoku(puzzle);
+    }
   };
 
   return (
     <section
       className={`${primaryColor} display-mode-transition w-full h-full flex justify-center items-center`}
     >
+      <Notification
+        content={{
+          state: {
+            visible: invalid,
+            setVisible: setInvalid,
+          },
+          icon: (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              x="0px"
+              y="0px"
+              viewBox="0 0 64 64"
+            >
+              <path d="M 32 11.919922 C 30.192 11.919922 28.573922 12.854922 27.669922 14.419922 L 9.7246094 45.5 C 8.8216094 47.066 8.8225625 48.935 9.7265625 50.5 C 10.629563 52.065 12.248641 53 14.056641 53 L 49.943359 53 C 51.751359 53 53.370438 52.065 54.273438 50.5 C 55.177438 48.935 55.178391 47.066 54.275391 45.5 L 36.330078 14.419922 C 35.427078 12.854922 33.808 11.919922 32 11.919922 z M 32 15.919922 C 32.174 15.919922 32.605234 15.968922 32.865234 16.419922 L 50.810547 47.5 C 51.071547 47.951 50.897547 48.35 50.810547 48.5 C 50.723547 48.65 50.465359 49 49.943359 49 L 14.054688 49 C 13.533688 49 13.276453 48.65 13.189453 48.5 C 13.102453 48.35 12.928453 47.951 13.189453 47.5 L 31.134766 16.419922 C 31.394766 15.968922 31.826 15.919922 32 15.919922 z M 31.984375 22.994141 C 31.292375 22.994141 30.730828 23.205906 30.298828 23.628906 C 29.865828 24.050906 29.660688 24.578891 29.679688 25.212891 L 29.996094 37.060547 C 30.035094 38.386547 30.706672 39.050781 32.013672 39.050781 C 33.282672 39.050781 33.927312 38.3875 33.945312 37.0625 L 34.320312 25.242188 C 34.339312 24.608187 34.123875 24.074578 33.671875 23.642578 C 33.220875 23.209578 32.657375 22.994141 31.984375 22.994141 z M 32 41.691406 C 30.465 41.691406 29.492188 42.988844 29.492188 44.089844 C 29.492188 45.190844 30.432 46.488281 32 46.488281 C 33.568 46.488281 34.507812 45.260844 34.507812 44.089844 C 34.507813 42.918844 33.535 41.691406 32 41.691406 z"></path>
+            </svg>
+          ),
+          label: "Sudoku invalide",
+          message: "Veuillez consulter la règle du jeu dans les paramètres.",
+          color:
+            "bg-red-500 hover:bg-red-400 border-red-400 fill-red-200 text-red-200",
+          action: () => {
+            setSettings(true);
+          },
+        }}
+      />
+      <Notification
+        content={{
+          state: {
+            visible: error,
+            setVisible: setError,
+          },
+          icon: (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              x="0px"
+              y="0px"
+              viewBox="0 0 64 64"
+            >
+              <path d="M 32 11.919922 C 30.192 11.919922 28.573922 12.854922 27.669922 14.419922 L 9.7246094 45.5 C 8.8216094 47.066 8.8225625 48.935 9.7265625 50.5 C 10.629563 52.065 12.248641 53 14.056641 53 L 49.943359 53 C 51.751359 53 53.370438 52.065 54.273438 50.5 C 55.177438 48.935 55.178391 47.066 54.275391 45.5 L 36.330078 14.419922 C 35.427078 12.854922 33.808 11.919922 32 11.919922 z M 32 15.919922 C 32.174 15.919922 32.605234 15.968922 32.865234 16.419922 L 50.810547 47.5 C 51.071547 47.951 50.897547 48.35 50.810547 48.5 C 50.723547 48.65 50.465359 49 49.943359 49 L 14.054688 49 C 13.533688 49 13.276453 48.65 13.189453 48.5 C 13.102453 48.35 12.928453 47.951 13.189453 47.5 L 31.134766 16.419922 C 31.394766 15.968922 31.826 15.919922 32 15.919922 z M 31.984375 22.994141 C 31.292375 22.994141 30.730828 23.205906 30.298828 23.628906 C 29.865828 24.050906 29.660688 24.578891 29.679688 25.212891 L 29.996094 37.060547 C 30.035094 38.386547 30.706672 39.050781 32.013672 39.050781 C 33.282672 39.050781 33.927312 38.3875 33.945312 37.0625 L 34.320312 25.242188 C 34.339312 24.608187 34.123875 24.074578 33.671875 23.642578 C 33.220875 23.209578 32.657375 22.994141 31.984375 22.994141 z M 32 41.691406 C 30.465 41.691406 29.492188 42.988844 29.492188 44.089844 C 29.492188 45.190844 30.432 46.488281 32 46.488281 C 33.568 46.488281 34.507812 45.260844 34.507812 44.089844 C 34.507813 42.918844 33.535 41.691406 32 41.691406 z"></path>
+            </svg>
+          ),
+          label: "Une erreur est survenue",
+          message: "Veuillez installer Python 3.6+ et redémarrer Sudokiste.",
+          color:
+            "bg-red-500 hover:bg-red-400 border-red-400 fill-red-200 text-red-200",
+          action: () => {
+            // @ts-ignore
+            window.electronAPI.openExternal(
+              "https://apps.microsoft.com/detail/9ncvdn91xzqp",
+            );
+          },
+        }}
+      />
+      {tutorial && (
+        <Notification
+          content={{
+            state: {
+              visible: tutorialMessage,
+              setVisible: setTutorialMessage,
+            },
+            icon: (
+              <div
+                className={
+                  "scale-75 fill-yellow-300 [filter:_drop-shadow(0_0.5vh_0.5vh_rgb(253,_224,_71))]"
+                }
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  x="0px"
+                  y="0px"
+                  viewBox="0 0 64 64"
+                >
+                  <path d="M 32 9 C 23.178 9 16 16.178 16 25 C 16 31.049 18.989578 34.352812 21.392578 37.007812 C 23.407578 39.234813 25 40.994 25 44 C 25 45.104 25.896 46 27 46 L 37 46 C 38.104 46 39 45.104 39 44 C 39 40.994 40.592422 39.234813 42.607422 37.007812 C 45.010422 34.352813 48 31.049 48 25 C 48 16.178 40.822 9 32 9 z M 12 10 C 10.896 10 10 10.895 10 12 C 10 13.105 10.896 14 12 14 C 13.104 14 14 13.105 14 12 C 14 10.895 13.104 10 12 10 z M 52 10 C 50.896 10 50 10.895 50 12 C 50 13.105 50.896 14 52 14 C 53.104 14 54 13.105 54 12 C 54 10.895 53.104 10 52 10 z M 32 13 C 38.617 13 44 18.383 44 25 C 44 29.508 41.883578 31.847219 39.642578 34.324219 C 37.805578 36.353219 35.762922 38.61 35.169922 42 L 28.830078 42 C 28.237078 38.611 26.194422 36.353219 24.357422 34.324219 C 22.116422 31.847219 20 29.508 20 25 C 20 18.383 25.383 13 32 13 z M 8 24 C 6.896 24 6 24.895 6 26 C 6 27.105 6.896 28 8 28 C 9.104 28 10 27.105 10 26 C 10 24.895 9.104 24 8 24 z M 56 24 C 54.896 24 54 24.895 54 26 C 54 27.105 54.896 28 56 28 C 57.104 28 58 27.105 58 26 C 58 24.895 57.104 24 56 24 z M 12 38 C 10.896 38 10 38.895 10 40 C 10 41.105 10.896 42 12 42 C 13.104 42 14 41.105 14 40 C 14 38.895 13.104 38 12 38 z M 52 38 C 50.896 38 50 38.895 50 40 C 50 41.105 50.896 42 52 42 C 53.104 42 54 41.105 54 40 C 54 38.895 53.104 38 52 38 z M 28 48 C 26.896 48 26 48.895 26 50 C 26 51.105 26.896 52 28 52 L 28.554688 52 C 29.247618 53.190604 30.523271 54 32 54 C 33.476729 54 34.752382 53.190604 35.445312 52 L 36 52 C 37.104 52 38 51.105 38 50 C 38 48.895 37.104 48 36 48 L 28 48 z"></path>
+                </svg>
+              </div>
+            ),
+            label: "Astuce",
+            message:
+              "Utilisez les flèches du clavier pour changer les valeurs!",
+            color:
+              "bg-blue-500 hover:bg-blue-400 border-blue-400 text-blue-200",
+            action: () => setTutorialMessage(false),
+          }}
+        />
+      )}
       <div
         className={
           "w-max h-full flex flex-col justify-center items-start gap-[3vh]"
@@ -105,10 +313,19 @@ const UI = () => {
               {subgrid.map((cell, cellIndex) => (
                 <input
                   key={cellIndex}
-                  type="number"
-                  min="1"
-                  max="9"
+                  type="text"
                   value={cell || ""}
+                  onClick={() => {
+                    console.log(tutorial);
+                    if (tutorial) {
+                      setTutorialMessage(true);
+                      setTimeout(() => {
+                        setTutorialMessage(false);
+                        setTutorial(false);
+                        localStorage.setItem("tutorial", "false");
+                      }, 7000);
+                    }
+                  }}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     inputChange(
                       Math.floor(index / 3) * 3 + Math.floor(cellIndex / 3),
@@ -116,7 +333,20 @@ const UI = () => {
                       e.target.value,
                     )
                   }
-                  className={`${primaryColor} ${textColor} text-[3vh] rounded-[1.25vh] shadow-inner border-b-[1px] border-stone-50/5 justify-self-center place-items-center p-[1vh] pl-[2.5vh] text-center z-0 w-[8vh] h-[8vh] display-mode-transition outline-none`}
+                  onBlur={() =>
+                    blur(
+                      Math.floor(index / 3) * 3 + Math.floor(cellIndex / 3),
+                      (index % 3) * 3 + (cellIndex % 3),
+                    )
+                  }
+                  onKeyDown={(e) =>
+                    handleKeyDown(
+                      e,
+                      Math.floor(index / 3) * 3 + Math.floor(cellIndex / 3),
+                      (index % 3) * 3 + (cellIndex % 3),
+                    )
+                  }
+                  className={`${primaryColor} ${textColor} text-[3vh] rounded-[1.25vh] shadow-inner border-b-[1px] border-stone-50/5  place-items-center p-[1vh] text-center z-10 w-[8vh] h-[8vh] display-mode-transition outline-none`}
                 />
               ))}
             </div>
@@ -198,7 +428,6 @@ const Terminal = () => {
       secondaryColor,
       solving,
       setSolving,
-      grid,
       setGrid,
       textColor,
       placeholder,
@@ -207,19 +436,15 @@ const Terminal = () => {
     }: AppContextType = useAppContext(),
     [input, setInput] = useState<string>(""),
     [history, setHistory] = useState<string[]>([]),
-    inputRef = useRef<HTMLTextAreaElement>(null),
-    whoamiPool: string[] = [
-      "I live in the American Gardens Building on West 81st Street on the 11th floor. My name is Patrick Bateman. I’m 27 years old. I believe in taking care of myself and a balanced diet and rigorous exercise routine. In the morning if my face is a little puffy I’ll put on an ice pack while doing stomach crunches. I can do 1000 now. After I remove the ice pack I use a deep pore cleanser lotion. In the shower I use a water activated gel cleanser, then a honey almond body scrub, and on the face an exfoliating gel scrub. Then I apply an herb-mint facial mask which I leave on for 10 minutes while I prepare the rest of my routine. I always use an after shave lotion with little or no alcohol, because alcohol dries your face out and makes you look older. Then moisturizer, then an anti-aging eye balm followed by a final moisturizing protective lotion. There is an idea of a Patrick Bateman, some kind of abstraction, but there is no real me, only an entity, something illusory, and though I can hide my cold gaze and you can shake my hand and feel flesh gripping yours and maybe you can even sense our lifestyles are probably comparable: I simply am not there.",
-      "La Matrice est un systeme, Neo. Ce systeme est notre ennemi. Mais quand vous etes a l'interieur, vous regardez autour de vous, que voyez-vous ? Des hommes d'affaires, des enseignants, des avocats, des charpentiers.",
-      "Je suis Sudokiste ! La cle pour vaincre tous les Sudokus du monde.",
-    ];
+    inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = "0px";
       inputRef.current.style.height = `${inputRef.current.scrollHeight}px`;
+      inputRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [input]);
+  }, [input, history]);
 
   useEffect(() => {
     // @ts-ignore
@@ -261,15 +486,17 @@ const Terminal = () => {
 
       setHistory((prev) => [...prev, `Utilisateur > ${input}`]);
       switch (input.trim().toLowerCase()) {
-        case "aide":
+        case "aide" || "?" || "help":
           setHistory((prev: string[]) => [
             ...prev,
-            "Sudokiste > Commandes disponibles:",
-            "parametres - Affiche les parametres",
-            "aide - Affiche cette liste d'aide",
-            "effacer - Efface l'historique",
-            "manuel - Affiche le manuel d'utilisation",
-            "whoami - Affiche des informations sur l'utilisateur",
+            "Sudokiste > <span class='underline'>Commandes disponibles:</span>",
+            "<br />",
+            "&#x2022; parametres &mdash; Affiche les paramètres",
+            "&#x2022; aide &mdash; Affiche cette liste d'aide",
+            "&#x2022; effacer &mdash; Efface l'historique",
+            "&#x2022; man &mdash; Affiche le manuel d'utilisation",
+            "&#x2022; whoami &mdash; Affiche des informations sur l'utilisateur",
+            "<br />",
           ]);
           setInput("");
           return;
@@ -282,18 +509,25 @@ const Terminal = () => {
           setSettings(!settings);
           setInput("");
           return;
-        case "manuel":
+        case "man":
           setHistory((prev) => [
             ...prev,
-            "Sudokiste > Pour resoudre un Sudoku, tapez le puzzle sous forme de 81 chiffres (0 pour les cases vides).",
-            "TIP: Lorsque la solution est trouvee, elle sera affichee ici, ainsi que dans le mode graphique!",
+            "Sudokiste > Manuel d'utilisation:",
+            "<br />",
+            "<span class='underline'>Règles du jeu:</span>",
+            "Le Sudoku est un jeu de puzzle où vous remplissez une grille de 9x9 avec des chiffres. Chaque ligne, colonne et carré 3x3 doit contenir tous les chiffres de 1 à 9 sans répétition. Vous commencez avec certains chiffres déjà placés et vous devez remplir les cases vides. Le but est de remplir la grille entière correctement.",
+            "<br />",
+            "<span class='underline'>Usage en mode terminal:</span>",
+            "Pour resoudre un Sudoku, tapez le puzzle sous forme de 81 chiffres (0 pour les cases vides), commencant par la premiere ligne, a partir de la gauche vers la droite, puis la deuxieme ligne, et ainsi de suite (en sens de lecture).",
+            "<br /><br />",
+            "<i>TIP: Lorsque la solution est trouvee, elle sera affichee ici, ainsi que dans le mode graphique!</i>",
           ]);
           setInput("");
           return;
         case "whoami":
           setHistory((prev) => [
             ...prev,
-            `Sudokiste > ${whoamiPool[Math.floor(Math.random() * whoamiPool.length)]}`,
+            "Sudokiste > Alors? On aurait perdu son acte de naissance?",
           ]);
           setInput("");
           return;
@@ -310,8 +544,18 @@ const Terminal = () => {
           const puzzle = Array.from({ length: 9 }, (_, i) =>
             Array.from({ length: 9 }, (_, j) => parseInt(input[9 * i + j], 10)),
           );
-          // @ts-ignore
-          window.electronAPI.sendSudoku(puzzle);
+          if (!gridValidation(puzzle)) {
+            setHistory((prev) => [
+              ...prev,
+              'Sudokiste > Sudoku invalide. Veuillez consulter la règle du jeu (commande "man").',
+            ]);
+            setSolving(false);
+            setInput("");
+            return;
+          } else {
+            // @ts-ignore
+            window.electronAPI.sendSudoku(puzzle);
+          }
       }
     }
   };
@@ -330,9 +574,11 @@ const Terminal = () => {
         className={`${secondaryColor} display-mode-transition rounded-[1.25vh] drop-shadow-2xl w-2/3 h-5/6 px-[4vh] py-[4vh] overflow-auto`}
       >
         {history.map((line, index) => (
-          <p key={index} className={"break-words"}>
-            {line}
-          </p>
+          <p
+            key={index}
+            className={"break-words"}
+            dangerouslySetInnerHTML={{ __html: line }}
+          />
         ))}
         {!solving && (
           <div className={"flex justify-start items-baseline w-full h-min"}>
@@ -343,7 +589,7 @@ const Terminal = () => {
               value={input}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
-              placeholder="Type a Sudoku puzzle as 81 characters..."
+              placeholder="Cliquez ici et commencez à taper..."
               disabled={solving}
             />
           </div>

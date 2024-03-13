@@ -33,6 +33,14 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
     cursor: pointer;
 }
 
+.grid-arrow {
+    cursor: pointer;
+    transition: background-color 200ms ease-in-out;
+    width: 4vh;
+    height: 4vh;
+    padding: 0.5vh;
+}
+
 .action-button {
     cursor: pointer;
     padding: 1vh 1.5vh;
@@ -49,7 +57,27 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
 .action-button:active {transform: scale(0.95)}
 
 .text-digital {
-    font-family: 'Digital', sans-serif;
+    font-family: 'IBM', sans-serif;
+}
+
+::-webkit-scrollbar {
+    background: rgba(0, 0, 0, 0);
+    width: 1vh;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(100, 100, 100, 0.5);
+    border-radius: 1vh;
+    cursor: grab;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 100, 100, 0.75);
+}
+
+::-webkit-scrollbar-thumb:active {
+    cursor: grabbing;
+    background: rgba(100, 100, 100, 0.75);
 }
 
 .settings-icon {
@@ -82,6 +110,14 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
     transition: color 200ms ease-in-out, scale 200ms ease-in-out;
 }
 
+.notification-scale {
+    scale: 100%;
+}
+
+.notification-scale:active {
+    scale: 95%;
+}
+
 @font-face {
     font-family: 'Noto Sans';
     src: url('../public/typography/NotoSans.ttf') format('truetype'),
@@ -89,6 +125,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
 }
 
 @font-face {
-    font-family: 'Digital';
-    src: url("../public/typography/digital.ttf") format('truetype');
+    font-family: 'IBM';
+    src: url("../public/typography/IBMPlexMono-Regular.ttf") format('truetype'),
+        url('../public/typography/IBMPlexMono-Italic.ttf') format('truetype');
 }
