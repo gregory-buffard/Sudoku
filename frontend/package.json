@@ -4,10 +4,10 @@
   "private": true,
   "main": "main/main.js",
   "author": "Grégory Stehlík Buffard",
-  "description": "Sudokiste",
+  "description": "Sudokiste, la clé pour vaincre tous les Sudoku du monde !™",
   "scripts": {
     "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"next dev\" \"electron .\"",
-    "build": "next build && electron-builder --win --x64",
+    "build": "next build && electron-builder --win --ia32 --x64 --arm64",
     "start": "next start",
     "lint": "next lint"
   },
@@ -25,7 +25,6 @@
     "productName": "Sudokiste",
     "copyright": "© 2024 Grégory Stehlík Buffard",
     "executableName": "sudokiste",
-    "compression": "maximum",
     "nsis": {
       "oneClick": false,
       "perMachine": false,
@@ -43,7 +42,7 @@
     "win": {
       "icon": "resources/Sudokiste.ico",
       "target": ["nsis"],
-      "artifactName": "Sudokiste Setup ${version}.${ext}",
+      "artifactName": "Sudokiste ${version} Setup ${arch}.${ext}",
       "publisherName": "Grégory Stehlík Buffard"
     },
     "linux": {

@@ -12,15 +12,15 @@ const appServe = app.isPackaged
 const checkPythonVersion = () => {
   return new Promise((resolve, reject) => {
     exec("python3 --version", (error, stdout, stderr) => {
-      if (!error && stdout.includes("Python")) {
+      if (!error && stdout.includes("3")) {
         resolve("python3");
       } else {
         exec("python --version", (error, stdout, stderr) => {
-          if (!error && (stdout + stderr).includes("Python")) {
+          if (!error && (stdout + stderr).includes("3")) {
             resolve("python");
           } else {
             exec("py --version", (error, stdout, stderr) => {
-              if (!error && (stdout + stderr).includes("Python")) {
+              if (!error && (stdout + stderr).includes("3")) {
                 resolve("py");
               } else {
                 reject(
@@ -67,7 +67,7 @@ const createWindow = () => {
           e.reply("error", data.toString());
         });
       })
-      .catch((e) => console.error(e));
+      .catch((e) => e.reply("error", e.message));
   });
   ipcMain.on("openExternal", (e, args) => {
     shell.openExternal(args);
